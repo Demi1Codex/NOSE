@@ -239,39 +239,47 @@ async function exportIdeas() {
     try {
       const { Filesystem, Directory } = await import('@capacitor/filesystem');
 
-      // Request permission if needed
+      // Request permission explicitly
       if (window.Capacitor.getPlatform() === 'android') {
-        const perm = await Filesystem.checkPermissions();
+        let perm = await Filesystem.checkPermissions();
+        console.log('Current permissions:', perm);
+
         if (perm.publicStorage !== 'granted') {
-          await Filesystem.requestPermissions();
+          perm = await Filesystem.requestPermissions();
+          if (perm.publicStorage !== 'granted') {
+            alert('Permiso de almacenamiento denegado. No se puede guardar el archivo.');
+            return;
+          }
         }
       }
 
       const folderName = 'borrachos.locks';
+      const dir = Directory.Documents; // Using Documents corresponds to /storage/emulated/0/Documents
+      // Documents is much more reliable on Android 11+ (API 30+)
 
-      // Ensure directory exists
       try {
         await Filesystem.mkdir({
           path: folderName,
-          directory: Directory.ExternalStorage, // This maps to /storage/emulated/0
+          directory: dir,
           recursive: true
         });
       } catch (e) {
-        // Directory might already exist
+        // Folder might already exist
       }
 
-      await Filesystem.writeFile({
+      const writeResult = await Filesystem.writeFile({
         path: `${folderName}/${fileName}`,
         data: contentToSave,
-        directory: Directory.ExternalStorage,
+        directory: dir,
         encoding: 'utf8'
       });
 
-      showToast(`✅ Guardado en: /borrachos.locks/${fileName}`);
+      showToast(`✅ Guardado en Documentos/${folderName}`);
+      console.log('Save result:', writeResult);
       return;
     } catch (err) {
-      console.error('Error saving with Filesystem', err);
-      // Fallback to regular download if native fail
+      console.error('Filesystem Error:', err);
+      alert('Error técnico al guardar: ' + err.message);
     }
   }
 
