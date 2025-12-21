@@ -61,3 +61,19 @@ app.on('window-all-closed', () => {
         app.quit();
     }
 });
+
+// Handle Save Dialog
+ipcMain.handle('show-save-dialog', async (event, options) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return await require('electron').dialog.showSaveDialog(win, options);
+});
+
+// Handle File Writing
+ipcMain.handle('write-file', async (event, filePath, content) => {
+    try {
+        fs.writeFileSync(filePath, content, 'utf-8');
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});

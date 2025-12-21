@@ -208,15 +208,15 @@ async function deriveKey(password, salt) {
 async function exportIdeas() {
   const password = prompt('Elige una contraseña para cifrar el archivo (déjala vacía para no cifrar):');
   const dataStr = JSON.stringify(ideas, null, 2);
-  const enc = new TextEncoder();
-  const data = enc.encode(dataStr);
+  const fileName = `borrachos-ideas-${new Date().toISOString().split('T')[0]}.lock`;
 
   let exportData;
-
   if (password) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const key = await deriveKey(password, salt);
+    const enc = new TextEncoder();
+    const data = enc.encode(dataStr);
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv: iv },
       key,
@@ -232,16 +232,66 @@ async function exportIdeas() {
     exportData = ideas;
   }
 
-  const blob = new Blob([JSON.stringify(exportData)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const contentToSave = JSON.stringify(exportData, null, 2);
 
+  // 1. Try Electron Native Dialog
+  if (window.ipcRenderer || (window.process && window.process.type === 'renderer')) {
+    const ipc = window.ipcRenderer || require('electron').ipcRenderer;
+    try {
+      const result = await ipc.invoke('show-save-dialog', {
+        title: 'Guardar tablero',
+        defaultPath: fileName,
+        filters: [{ name: 'Borrachos Lock', extensions: ['lock'] }]
+      });
+
+      if (!result.canceled && result.filePath) {
+        const writeResult = await ipc.invoke('write-file', result.filePath, contentToSave);
+        if (writeResult.success) {
+          showToast('✅ Archivo guardado correctamente');
+          return;
+        } else {
+          alert('Error al guardar el archivo: ' + writeResult.error);
+        }
+      } else {
+        return; // Canceled
+      }
+    } catch (err) {
+      console.warn('Electron IPC failed, falling back to web methods', err);
+    }
+  }
+
+  // 2. Try Modern Web File System Access API
+  if ('showSaveFilePicker' in window) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{
+          description: 'Borrachos Lock File',
+          accept: { 'application/json': ['.lock'] },
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(contentToSave);
+      await writable.close();
+      showToast('✅ Archivo guardado correctamente');
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('File System Access API failed, falling back to legacy download', err);
+    }
+  }
+
+  // 3. Legacy fallback (Old method)
+  const blob = new Blob([contentToSave], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `borrachos-ideas-${new Date().toISOString().split('T')[0]}.lock`;
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+  showToast('✅ Descarga iniciada');
 }
 
 function importIdeas(e) {
