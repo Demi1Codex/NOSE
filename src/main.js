@@ -19,7 +19,7 @@ function init() {
 function applySavedTheme() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
-  themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 }
 
 function setupEventListeners() {
@@ -29,7 +29,7 @@ function setupEventListeners() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    themeToggle.textContent = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
   });
 
   // Modal Open (Main button)
