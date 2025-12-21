@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "android:build": "npm run build && npx cap copy android",
     "android:sync": "npx cap sync",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "bundledebug": "npm run build && npx cap copy android && cd android && gradlew bundleDebug"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
