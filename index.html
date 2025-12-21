@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borrachos.docx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="icon" type="image/png" href="/palpueblo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+
+  <header>
+    <img src="/palpueblo.png" alt="Logo" class="logo">
+    <h1>Borrachos.docx</h1>
+    <div class="controls">
+      <button id="calendarBtn" class="theme-toggle" aria-label="Ver Calendario">
+        📅 Calendario
+      </button>
+      <button id="shareBtn" class="theme-toggle" aria-label="Compartir Tablero">
+        📤 Compartir
+      </button>
+      <button id="openSharedBtn" class="theme-toggle" aria-label="Abrir Compartido">
+        📂 Abrir
+      </button>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle Theme">
+        ☀️ Light
+      </button>
+      <input type="file" id="sharedFileInput" accept=".lock" style="display: none;">
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="radio-inputs" id="categoryFilterList">
+      <label class="radio">
+        <input type="radio" name="category" value="all" checked>
+        <span class="name">
+          <span class="pre-name"></span>
+          <span class="pos-name"></span>
+          <span>Todas</span>
+        </span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="category" value="Personal">
+        <span class="name">
+          <span class="pre-name"></span>
+          <span class="pos-name"></span>
+          <span>Personal</span>
+        </span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="category" value="Trabajo">
+        <span class="name">
+          <span class="pre-name"></span>
+          <span class="pos-name"></span>
+          <span>Trabajo</span>
+        </span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="category" value="Diversion">
+        <span class="name">
+          <span class="pre-name"></span>
+          <span class="pos-name"></span>
+          <span>Diversión</span>
+        </span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="category" value="Grupales">
+        <span class="name">
+          <span class="pre-name"></span>
+          <span class="pos-name"></span>
+          <span>Grupales</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content-inner">
+        <div class="content-area">
+          <div class="toolbar">
+            <button id="addIdeaBtn" class="btn-primary">
+              + Nueva Idea
+            </button>
+          </div>
+
+          <div class="board">
+
+            <!-- Progress Column -->
+            <div class="column">
+              <div class="column-header">
+                <span class="column-title">
+                  <span style="color: #60A5FA;">●</span>
+                  En Progreso
+                </span>
+                <span id="progressCount" class="count-badge">0</span>
+              </div>
+              <div id="progressList" class="idea-list">
+                <!-- Ideas will be injected here -->
+                <div class="empty-state">No hay ideas en progreso</div>
+              </div>
+            </div>
+
+            <!-- Paused Column -->
+            <div class="column">
+              <div class="column-header">
+                <span class="column-title">
+                  <span style="color: #F87171;">●</span>
+                  Pausado
+                </span>
+                <span id="pausedCount" class="count-badge">0</span>
+              </div>
+              <div id="pausedList" class="idea-list">
+                <!-- Ideas will be injected here -->
+                <div class="empty-state">No hay ideas pausadas</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Create Idea Modal -->
+  <div id="ideaModal" class="modal-overlay">
+    <div class="modal">
+
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Crear Nueva Idea</h2>
+        <button id="closeModalBtn" class="btn-icon">✕</button>
+      </div>
+
+      <form id="ideaForm">
+
+        <div class="form-group">
+          <label for="ideaTitle">Nombre de la idea</label>
+          <input type="text" id="ideaTitle" class="form-control" required placeholder="Ej: Rediseñar landing page...">
+        </div>
+
+        <div class="form-group">
+          <label for="ideaDesc">Descripción</label>
+          <textarea id="ideaDesc" class="form-control" rows="3" required
+            placeholder="Detalles sobre la idea..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="ideaCategory">Categoría</label>
+          <select id="ideaCategory" class="form-control select-status">
+            <option value="Personal">Personal</option>
+            <option value="Trabajo">Trabajo</option>
+            <option value="Diversion">Diversión</option>
+            <option value="Grupales">Grupales</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ideaStatus">Estado Inicial</label>
+          <select id="ideaStatus" class="form-control select-status">
+            <option value="progress">En Progreso</option>
+            <option value="paused">Pausado</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ideaDate">Fecha y Hora (Opcional para el Calendario)</label>
+          <input type="datetime-local" id="ideaDate" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="ideaNotify">Notificaciones</label>
+          <select id="ideaNotify" class="form-control select-status">
+            <option value="true" selected>🔔 Notificarme</option>
+            <option value="false">🔕 No notificarme</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ideaImage">Imagen (Opcional)</label>
+          <input type="file" id="ideaImage" class="form-control" accept="image/*">
+        </div>
+
+        <input type="hidden" id="ideaId">
+        <div class="modal-footer">
+          <button type="button" id="cancelIdea" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Idea</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Calendar View Modal -->
+  <div id="calendarModal" class="modal-overlay">
+    <div class="modal calendar-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📅 Mi Calendario</h2>
+        <button id="closeCalendar" class="btn-icon">✕</button>
+      </div>
+      <div id="calendarContent" class="calendar-content">
+        <div id="calendarEvents" class="events-list">
+          <div id="eventsContainer"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="requestNotifyBtn" class="btn-secondary">🔔 Activar Notificaciones de Escritorio</button>
+        <button id="closeCalendarBtn" class="btn-primary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="notificationContainer" class="notification-container"></div>
+
+  <footer style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.8rem;">
+    <p>&copy; 2025 Borrachos.docx Application | <a href="privacy.html"
+        style="color: var(--text-secondary); text-decoration: underline;">Política de Privacidad</a></p>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

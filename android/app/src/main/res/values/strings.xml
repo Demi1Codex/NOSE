@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Borrachos.docx</string>
+    <string name="title_activity_main">Borrachos.docx</string>
+    <string name="package_name">com.borrachos.docx</string>
+    <string name="custom_url_scheme">com.borrachos.docx</string>
+</resources>

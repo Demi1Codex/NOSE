@@ -1,0 +1,377 @@
+// Borrachos.docx Idea Manager Logic
+let ideas = JSON.parse(localStorage.getItem('borrachos-ideas')) || JSON.parse(localStorage.getItem('patata-ideas')) || [];
+const modal = document.getElementById('ideaModal');
+const ideaForm = document.getElementById('ideaForm');
+const themeToggle = document.getElementById('themeToggle');
+const calendarModal = document.getElementById('calendarModal');
+const sharedFileInput = document.getElementById('sharedFileInput');
+
+// State
+let currentFilter = 'all';
+
+// Initialize
+function init() {
+  renderIdeas();
+  setupEventListeners();
+  applySavedTheme();
+}
+
+function applySavedTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+}
+
+function setupEventListeners() {
+  // Theme Toggle
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    themeToggle.textContent = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  });
+
+  // Modal Open (Main button)
+  document.getElementById('addIdeaBtn').addEventListener('click', () => {
+    openModal();
+  });
+
+  // Modal Close
+  document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+  document.getElementById('cancelIdea').addEventListener('click', closeModal);
+
+  // Calendar
+  document.getElementById('calendarBtn').addEventListener('click', openCalendar);
+  document.getElementById('closeCalendar').addEventListener('click', closeCalendar);
+  document.getElementById('closeCalendarBtn').addEventListener('click', closeCalendar);
+
+  // Share (Export)
+  document.getElementById('shareBtn').addEventListener('click', exportIdeas);
+
+  // Open (Import)
+  document.getElementById('openSharedBtn').addEventListener('click', () => sharedFileInput.click());
+  sharedFileInput.addEventListener('change', importIdeas);
+
+  // Form Submit
+  ideaForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveIdea();
+  });
+
+  // Filter change
+  document.querySelectorAll('input[name="category"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      currentFilter = e.target.value;
+      renderIdeas();
+    });
+  });
+
+  // Drag and Drop
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.lock') || file.name.endsWith('.json'))) {
+      handleImport(file);
+    }
+  });
+
+  // IPC Listener for opening files from main process
+  if (window.require) {
+    const { ipcRenderer } = window.require('electron');
+    ipcRenderer.on('open-file-data', (event, { content }) => {
+      try {
+        const imported = JSON.parse(content);
+        processImport(imported);
+      } catch (err) {
+        console.error('Error parsing IPC file data', err);
+      }
+    });
+  }
+}
+
+function openModal(idea = null, defaultStatus = 'progress') {
+  const title = document.getElementById('modalTitle');
+  const idInput = document.getElementById('ideaId');
+  const nameInput = document.getElementById('ideaTitle');
+  const descInput = document.getElementById('ideaDesc');
+  const catSelect = document.getElementById('ideaCategory');
+  const statusSelect = document.getElementById('ideaStatus');
+  const dateInput = document.getElementById('ideaDate');
+  const notifySelect = document.getElementById('ideaNotify');
+
+  if (idea) {
+    title.textContent = 'Editar Idea';
+    idInput.value = idea.id;
+    nameInput.value = idea.name;
+    descInput.value = idea.description;
+    catSelect.value = idea.category;
+    statusSelect.value = idea.status;
+    dateInput.value = idea.date || '';
+    notifySelect.value = idea.notify !== undefined ? idea.notify.toString() : 'true';
+  } else {
+    title.textContent = 'Nueva Idea';
+    idInput.value = '';
+    ideaForm.reset();
+    statusSelect.value = defaultStatus;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  modal.classList.remove('open');
+}
+
+function openCalendar() {
+  const eventsContainer = document.getElementById('eventsContainer');
+  eventsContainer.innerHTML = '';
+
+  const ideasWithDate = ideas.filter(i => i.date).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (ideasWithDate.length === 0) {
+    eventsContainer.innerHTML = '<p class="empty-state">No hay ideas con fecha programada.</p>';
+  } else {
+    ideasWithDate.forEach(idea => {
+      const dateObj = new Date(idea.date);
+      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = dateObj.toLocaleDateString([], { day: '2-digit', month: 'short' });
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.innerHTML = `
+        <div class="event-time-badge">
+          <span class="time">${timeStr}</span>
+          <span class="date">${dateStr}</span>
+        </div>
+        <div class="event-details">
+          <div class="event-title">${idea.name}</div>
+          <div class="event-meta">
+            <span class="category">${idea.category}</span>
+          </div>
+        </div>
+      `;
+      eventsContainer.appendChild(item);
+    });
+  }
+
+  calendarModal.classList.add('open');
+}
+
+function closeCalendar() {
+  calendarModal.classList.remove('open');
+}
+
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function exportIdeas() {
+  const password = prompt('Elige una contraseña para cifrar el archivo (déjala vacía para no cifrar):');
+  const dataStr = JSON.stringify(ideas, null, 2);
+  const enc = new TextEncoder();
+  const data = enc.encode(dataStr);
+
+  let exportData;
+
+  if (password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      data
+    );
+
+    exportData = {
+      salt: Array.from(salt),
+      iv: Array.from(iv),
+      ciphertext: Array.from(new Uint8Array(ciphertext))
+    };
+  } else {
+    exportData = ideas;
+  }
+
+  const blob = new Blob([JSON.stringify(exportData)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `borrachos-ideas-${new Date().toISOString().split('T')[0]}.lock`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function importIdeas(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  handleImport(file);
+}
+
+function handleImport(file) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const imported = JSON.parse(event.target.result);
+      processImport(imported);
+    } catch (err) {
+      alert('Error al importar el archivo.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function processImport(imported) {
+  let finalData = imported;
+
+  if (imported.salt && imported.iv && imported.ciphertext) {
+    const password = prompt('Este archivo está cifrado. Introduce la contraseña:');
+    if (!password) return;
+
+    try {
+      const salt = new Uint8Array(imported.salt);
+      const iv = new Uint8Array(imported.iv);
+      const ciphertext = new Uint8Array(imported.ciphertext);
+      const key = await deriveKey(password, salt);
+
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        ciphertext
+      );
+
+      const dec = new TextDecoder();
+      finalData = JSON.parse(dec.decode(decrypted));
+    } catch (err) {
+      alert('Contraseña incorrecta o archivo corrupto.');
+      return;
+    }
+  }
+
+  if (Array.isArray(finalData)) {
+    if (confirm('¿Deseas importar estas ideas? Las actuales se mantendrán.')) {
+      ideas = [...ideas, ...finalData.filter(i => !ideas.find(ex => ex.id === i.id))];
+      localStorage.setItem('borrachos-ideas', JSON.stringify(ideas));
+      renderIdeas();
+    }
+  } else {
+    alert('El formato del archivo no es válido.');
+  }
+}
+
+function saveIdea() {
+  const id = document.getElementById('ideaId').value;
+  const newIdea = {
+    id: id || Date.now().toString(),
+    name: document.getElementById('ideaTitle').value,
+    description: document.getElementById('ideaDesc').value,
+    category: document.getElementById('ideaCategory').value,
+    status: document.getElementById('ideaStatus').value,
+    date: document.getElementById('ideaDate').value,
+    notify: document.getElementById('ideaNotify').value === 'true',
+    timestamp: Date.now()
+  };
+
+  if (id) {
+    ideas = ideas.map(i => i.id === id ? newIdea : i);
+  } else {
+    ideas.push(newIdea);
+  }
+
+  localStorage.setItem('borrachos-ideas', JSON.stringify(ideas));
+  renderIdeas();
+  closeModal();
+}
+
+function deleteIdea(id) {
+  if (confirm('¿Seguro que quieres borrar esta idea?')) {
+    ideas = ideas.filter(i => i.id !== id);
+    localStorage.setItem('borrachos-ideas', JSON.stringify(ideas));
+    renderIdeas();
+  }
+}
+
+function renderIdeas() {
+  const progressList = document.getElementById('progressList');
+  const pausedList = document.getElementById('pausedList');
+  const progressCount = document.getElementById('progressCount');
+  const pausedCount = document.getElementById('pausedCount');
+
+  progressList.innerHTML = '<div class="empty-state">No hay ideas en progreso</div>';
+  pausedList.innerHTML = '<div class="empty-state">No hay ideas pausadas</div>';
+
+  const filteredIdeas = ideas.filter(i => currentFilter === 'all' || i.category === currentFilter);
+
+  const progIdeas = filteredIdeas.filter(i => i.status === 'progress' || i.status === 'progreso');
+  const pausIdeas = filteredIdeas.filter(i => i.status === 'paused' || i.status === 'pausado');
+
+  if (progIdeas.length > 0) progressList.innerHTML = '';
+  if (pausIdeas.length > 0) pausedList.innerHTML = '';
+
+  filteredIdeas.forEach(idea => {
+    // Standardize status for rendering
+    const statusClass = (idea.status === 'progress' || idea.status === 'progreso') ? 'progress' : 'paused';
+
+    const card = document.createElement('div');
+    card.className = `idea-card ${statusClass}`;
+
+    let dateHtml = '';
+    if (idea.date) {
+      const d = new Date(idea.date);
+      dateHtml = `<div class="event-time">📅 ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="category-badge">${idea.category}</div>
+      <div class="card-title">${idea.name}</div>
+      <div class="card-desc">${idea.description}</div>
+      ${dateHtml}
+      <div class="card-actions">
+        <button class="btn-icon edit-btn" title="Editar">✏️</button>
+        <button class="btn-icon btn-delete delete-btn" title="Borrar">🗑️</button>
+      </div>
+    `;
+
+    card.querySelector('.edit-btn').onclick = () => openModal(idea);
+    card.querySelector('.delete-btn').onclick = () => deleteIdea(idea.id);
+
+    if (statusClass === 'progress') {
+      progressList.appendChild(card);
+    } else {
+      pausedList.appendChild(card);
+    }
+  });
+
+  progressCount.textContent = progIdeas.length;
+  pausedCount.textContent = pausIdeas.length;
+}
+
+init();
