@@ -26,10 +26,16 @@ android {
 }
 
 repositories {
-    flatDir{
-        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    // Reemplazamos flatDir con repositorios maven locales
+    maven {
+        url = uri('../capacitor-cordova-android-plugins/src/main/libs')
     }
+    maven {
+        url = uri('libs')
+    }
+    // No borres los repositorios que ya estaban (si los hubiera, como google() o mavenCentral())
 }
+
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
