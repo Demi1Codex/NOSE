@@ -69,6 +69,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: 10px;
+  /* Added 10px top gap */
 }
 
 /* Header & Nav */
@@ -83,7 +85,8 @@ header {
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(12px);
   position: sticky;
-  top: 0;
+  top: 10px;
+  /* Adjusted to match the 10px top gap */
   z-index: 100;
 }
 
@@ -459,7 +462,8 @@ input[type="datetime-local"] {
   border: 1px solid var(--border-color);
   /* Sticky sidebar */
   position: sticky;
-  top: 100px;
+  top: 110px;
+  /* Adjusted to match the 10px top gap + original 100px */
 }
 
 .sidebar h3 {
@@ -571,7 +575,8 @@ input[type="datetime-local"] {
   #openSharedBtn,
   #calendarBtn {
     position: fixed;
-    top: 1rem;
+    top: calc(1rem + 10px);
+    /* Adjusted for 10px top gap */
     z-index: 1001;
     padding: 0.6rem;
     border-radius: 50%;
