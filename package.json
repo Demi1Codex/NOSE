@@ -16,6 +16,7 @@
     "android:open": "npx cap open android"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "concurrently": "^9.2.1",
     "electron": "^39.2.7",
     "vite": "^7.2.4",
@@ -24,6 +25,7 @@
   "dependencies": {
     "@capacitor/android": "^8.0.0",
     "@capacitor/cli": "^8.0.0",
-    "@capacitor/core": "^8.0.0"
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0"
   }
 }

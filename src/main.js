@@ -82,15 +82,29 @@ function setupEventListeners() {
     }
   });
 
-  // IPC Listener for opening files from main process
-  if (window.require) {
-    const { ipcRenderer } = window.require('electron');
-    ipcRenderer.on('open-file-data', (event, { content }) => {
+  // Notifications Permission
+  const requestNotifyBtn = document.getElementById('requestNotifyBtn');
+  if (requestNotifyBtn) {
+    requestNotifyBtn.addEventListener('click', async () => {
       try {
-        const imported = JSON.parse(content);
-        processImport(imported);
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          const permission = await LocalNotifications.requestPermissions();
+          if (permission.display === 'granted') {
+            showToast('✅ Notificaciones activadas');
+          } else {
+            showToast('❌ Permiso denegado');
+          }
+        } else if ('Notification' in window) {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            showToast('✅ Notificaciones activadas');
+          } else {
+            showToast('❌ Permiso denegado');
+          }
+        }
       } catch (err) {
-        console.error('Error parsing IPC file data', err);
+        console.error('Error requesting notifications', err);
       }
     });
   }
@@ -308,6 +322,11 @@ function saveIdea() {
 
   localStorage.setItem('borrachos-ideas', JSON.stringify(ideas));
   renderIdeas();
+
+  if (newIdea.date && newIdea.notify) {
+    scheduleNotification(newIdea);
+  }
+
   closeModal();
 }
 
@@ -372,6 +391,59 @@ function renderIdeas() {
 
   progressCount.textContent = progIdeas.length;
   pausedCount.textContent = pausIdeas.length;
+}
+
+async function scheduleNotification(idea) {
+  if (!idea.date || !idea.notify) return;
+  const fireDate = new Date(idea.date);
+  if (fireDate <= new Date()) return;
+
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: 'Recordatorio: ' + idea.name,
+            body: idea.description,
+            id: Math.floor(Math.random() * 1000000),
+            schedule: { at: fireDate },
+            actionTypeId: "",
+            extra: null
+          }
+        ]
+      });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      const delay = fireDate.getTime() - Date.now();
+      setTimeout(() => {
+        new Notification('Recordatorio: ' + idea.name, {
+          body: idea.description,
+          icon: '/palpueblo.png'
+        });
+      }, delay);
+    }
+  } catch (err) {
+    console.error('Error scheduling notification', err);
+  }
+}
+
+function showToast(message) {
+  const container = document.getElementById('notificationContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'notification-toast';
+  toast.innerHTML = `
+    <span class="notify-icon">🔔</span>
+    <div class="notify-body">
+      <div class="notify-header">Borrachos.docx</div>
+      <div class="notify-msg">${message}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 init();

@@ -26,6 +26,7 @@
 
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
   --transition-speed: 0.3s;
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 [data-theme="light"] {
@@ -75,8 +76,8 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+  padding: 1rem 2rem;
+  padding-top: calc(1rem + var(--safe-top));
   background-color: rgba(30, 30, 30, 0.8);
   /* Glass effect base */
   border-bottom: 1px solid var(--border-color);
