@@ -108,6 +108,55 @@ function setupEventListeners() {
       }
     });
   }
+  // Permissions Setup Button (Android)
+  const setupPermsBtn = document.getElementById('setupPermsBtn');
+  if (setupPermsBtn) {
+    setupPermsBtn.addEventListener('click', setupPermissions);
+  }
+}
+
+async function setupPermissions() {
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+
+      // Request permissions
+      const perm = await Filesystem.requestPermissions();
+      if (perm.publicStorage === 'granted') {
+        showToast('✅ Permisos concedidos');
+        // Try to create the folder right away
+        await createLocksFolder();
+      } else {
+        alert('❌ Permisos denegados. Debes activarlos manualmente en los ajustes de la app.');
+      }
+    } catch (err) {
+      console.error('Error in setupPermissions:', err);
+      alert('Error: ' + err.message);
+    }
+  } else {
+    showToast('💡 Solo necesario en Android');
+  }
+}
+
+async function createLocksFolder() {
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const folderName = 'borrachos.locks';
+    const dir = Directory.Documents;
+
+    await Filesystem.mkdir({
+      path: folderName,
+      directory: dir,
+      recursive: true
+    });
+    showToast('📂 Carpeta creada en Documentos');
+  } catch (e) {
+    if (e.message && e.message.includes('exists')) {
+      showToast('✅ Carpeta ya existe');
+    } else {
+      console.error('Error creating folder:', e);
+    }
+  }
 }
 
 function openModal(idea = null, defaultStatus = 'progress') {
