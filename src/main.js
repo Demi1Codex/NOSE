@@ -234,7 +234,48 @@ async function exportIdeas() {
 
   const contentToSave = JSON.stringify(exportData, null, 2);
 
-  // 1. Try Electron Native Dialog
+  // 1. Android / iOS (Capacitor Native)
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+
+      // Request permission if needed
+      if (window.Capacitor.getPlatform() === 'android') {
+        const perm = await Filesystem.checkPermissions();
+        if (perm.publicStorage !== 'granted') {
+          await Filesystem.requestPermissions();
+        }
+      }
+
+      const folderName = 'borrachos.locks';
+
+      // Ensure directory exists
+      try {
+        await Filesystem.mkdir({
+          path: folderName,
+          directory: Directory.ExternalStorage, // This maps to /storage/emulated/0
+          recursive: true
+        });
+      } catch (e) {
+        // Directory might already exist
+      }
+
+      await Filesystem.writeFile({
+        path: `${folderName}/${fileName}`,
+        data: contentToSave,
+        directory: Directory.ExternalStorage,
+        encoding: 'utf8'
+      });
+
+      showToast(`✅ Guardado en: /borrachos.locks/${fileName}`);
+      return;
+    } catch (err) {
+      console.error('Error saving with Filesystem', err);
+      // Fallback to regular download if native fail
+    }
+  }
+
+  // 2. Electron Native Dialog (Previous implementation)
   if (window.ipcRenderer || (window.process && window.process.type === 'renderer')) {
     const ipc = window.ipcRenderer || require('electron').ipcRenderer;
     try {
@@ -260,7 +301,7 @@ async function exportIdeas() {
     }
   }
 
-  // 2. Try Modern Web File System Access API
+  // 3. Modern Web File System Access API
   if ('showSaveFilePicker' in window) {
     try {
       const handle = await window.showSaveFilePicker({
@@ -281,7 +322,7 @@ async function exportIdeas() {
     }
   }
 
-  // 3. Legacy fallback (Old method)
+  // 4. Legacy fallback (Old method)
   const blob = new Blob([contentToSave], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
