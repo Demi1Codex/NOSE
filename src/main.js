@@ -54,9 +54,9 @@ function setupEventListeners() {
   sharedFileInput.addEventListener('change', importIdeas);
 
   // Form Submit
-  ideaForm.addEventListener('submit', (e) => {
+  ideaForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    saveIdea();
+    await saveIdea();
   });
 
   // Filter change
@@ -178,11 +178,14 @@ function openModal(idea = null, defaultStatus = 'progress') {
     statusSelect.value = idea.status;
     dateInput.value = idea.date || '';
     notifySelect.value = idea.notify !== undefined ? idea.notify.toString() : 'true';
+    // Clear image input
+    document.getElementById('ideaImage').value = '';
   } else {
     title.textContent = 'Nueva Idea';
     idInput.value = '';
     ideaForm.reset();
     statusSelect.value = defaultStatus;
+    document.getElementById('ideaImage').value = '';
   }
 
   modal.classList.add('open');
@@ -444,8 +447,25 @@ async function processImport(imported) {
   }
 }
 
-function saveIdea() {
+async function saveIdea() {
   const id = document.getElementById('ideaId').value;
+  const imageInput = document.getElementById('ideaImage');
+  let imageData = null;
+
+  if (imageInput.files && imageInput.files[0]) {
+    imageData = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(imageInput.files[0]);
+    });
+  }
+
+  // If editing and no new image is selected, keep the old one
+  if (id && !imageData) {
+    const existing = ideas.find(i => i.id === id);
+    if (existing) imageData = existing.image || existing.img;
+  }
+
   const newIdea = {
     id: id || Date.now().toString(),
     name: document.getElementById('ideaTitle').value,
@@ -454,6 +474,7 @@ function saveIdea() {
     status: document.getElementById('ideaStatus').value,
     date: document.getElementById('ideaDate').value,
     notify: document.getElementById('ideaNotify').value === 'true',
+    image: imageData,
     timestamp: Date.now()
   };
 
@@ -472,6 +493,7 @@ function saveIdea() {
 
   closeModal();
 }
+
 
 function deleteIdea(id) {
   if (confirm('¿Seguro que quieres borrar esta idea?')) {
@@ -517,16 +539,29 @@ function renderIdeas() {
     const card = document.createElement('div');
     card.className = `idea-card ${statusClass}`;
 
+    const ideaName = idea.name || idea.title || idea.nombre || 'Sin nombre';
+    const ideaDesc = idea.description || idea.desc || idea.descripcion || '';
+    const ideaImg = idea.image || idea.img || idea.imagen || null;
+    const ideaCategory = idea.category || idea.categoria || 'Sin categoría';
+    const ideaDate = idea.date || idea.fecha || '';
+
     let dateHtml = '';
-    if (idea.date) {
-      const d = new Date(idea.date);
+    if (ideaDate) {
+      const d = new Date(ideaDate);
       dateHtml = `<div class="event-time">📅 ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
     }
 
+    let imgHtml = '';
+    if (ideaImg) {
+      imgHtml = `<div class="card-image"><img src="${ideaImg}" alt="Idea Image"></div>`;
+    }
+
+
     card.innerHTML = `
-      <div class="category-badge">${idea.category}</div>
-      <div class="card-title">${idea.name}</div>
-      <div class="card-desc">${idea.description}</div>
+      ${imgHtml}
+      <div class="category-badge">${ideaCategory}</div>
+      <div class="card-title">${ideaName}</div>
+      <div class="card-desc">${ideaDesc}</div>
       ${dateHtml}
       <div class="card-actions">
         <button class="btn-icon status-btn" title="${statusClass === 'progress' ? 'Pausar' : 'Reanudar'}">${statusClass === 'progress' ? '⏸️' : '▶️'}</button>
@@ -534,6 +569,8 @@ function renderIdeas() {
         <button class="btn-icon btn-delete delete-btn" title="Borrar">🗑️</button>
       </div>
     `;
+
+
 
     card.querySelector('.status-btn').onclick = () => toggleStatus(idea.id);
     card.querySelector('.edit-btn').onclick = () => openModal(idea);
