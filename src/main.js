@@ -486,6 +486,18 @@ function deleteIdea(id) {
   }
 }
 
+function toggleStatus(id) {
+  ideas = ideas.map(i => {
+    if (i.id === id) {
+      const current = (i.status === 'progress' || i.status === 'progreso') ? 'progress' : 'paused';
+      i.status = current === 'progress' ? 'paused' : 'progress';
+    }
+    return i;
+  });
+  localStorage.setItem('borrachos-ideas', JSON.stringify(ideas));
+  renderIdeas();
+}
+
 function renderIdeas() {
   const progressList = document.getElementById('progressList');
   const pausedList = document.getElementById('pausedList');
@@ -522,11 +534,13 @@ function renderIdeas() {
       <div class="card-desc">${idea.description}</div>
       ${dateHtml}
       <div class="card-actions">
+        <button class="btn-icon status-btn" title="${statusClass === 'progress' ? 'Pausar' : 'Reanudar'}">${statusClass === 'progress' ? '⏸️' : '▶️'}</button>
         <button class="btn-icon edit-btn" title="Editar">✏️</button>
         <button class="btn-icon btn-delete delete-btn" title="Borrar">🗑️</button>
       </div>
     `;
 
+    card.querySelector('.status-btn').onclick = () => toggleStatus(idea.id);
     card.querySelector('.edit-btn').onclick = () => openModal(idea);
     card.querySelector('.delete-btn').onclick = () => deleteIdea(idea.id);
 

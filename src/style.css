@@ -26,7 +26,6 @@
 
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
   --transition-speed: 0.3s;
-  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 [data-theme="light"] {
@@ -69,8 +68,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: 10px;
-  /* Added 10px top gap */
 }
 
 /* Header & Nav */
@@ -78,15 +75,13 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  padding-top: calc(1rem + var(--safe-top));
+  padding: 1.5rem 2rem;
   background-color: rgba(30, 30, 30, 0.8);
   /* Glass effect base */
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(12px);
   position: sticky;
-  top: 10px;
-  /* Adjusted to match the 10px top gap */
+  top: 0;
   z-index: 100;
 }
 
@@ -136,14 +131,6 @@ button:active {
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 1.2rem;
 }
 
 .btn-primary {
@@ -462,8 +449,7 @@ input[type="datetime-local"] {
   border: 1px solid var(--border-color);
   /* Sticky sidebar */
   position: sticky;
-  top: 110px;
-  /* Adjusted to match the 10px top gap + original 100px */
+  top: 100px;
 }
 
 .sidebar h3 {
@@ -575,8 +561,7 @@ input[type="datetime-local"] {
   #openSharedBtn,
   #calendarBtn {
     position: fixed;
-    top: calc(1rem + 10px);
-    /* Adjusted for 10px top gap */
+    top: 1rem;
     z-index: 1001;
     padding: 0.6rem;
     border-radius: 50%;

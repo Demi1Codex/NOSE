@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
@@ -30,11 +30,15 @@
             font-weight: 600;
         }
     </style>
+    <script>
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
 </head>
 
 <body>
     <div class="privacy-container">
-        <a href="/" class="back-btn">← Volver al Tablero</a>
+        <a href="index.html" class="back-btn">← Volver al Tablero</a>
         <h1>Política de Privacidad</h1>
         <p>Última actualización: 20 de diciembre de 2025</p>
 
