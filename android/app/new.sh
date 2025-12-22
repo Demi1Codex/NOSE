@@ -1,0 +1,3 @@
+bash
+    ng build
+    
