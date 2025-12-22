@@ -233,26 +233,22 @@ function closeCalendar() {
 
 async function deriveKey(password, salt) {
   const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
+  const keyMaterial = await window.crypto.subtle.importKey(
+    "raw",
     enc.encode(password),
-    'PBKDF2',
+    { name: "PBKDF2" },
     false,
-    ['deriveBits', 'deriveKey']
+    ["deriveKey"]
   );
-  return crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: salt,
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
+  return window.crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
     keyMaterial,
-    { name: 'AES-GCM', length: 256 },
+    { name: "AES-GCM", length: 256 },
     false,
-    ['encrypt', 'decrypt']
+    ["encrypt", "decrypt"]
   );
 }
+
 
 async function exportIdeas() {
   const password = prompt('Elige una contraseña para cifrar el archivo (déjala vacía para no cifrar):');
@@ -261,15 +257,14 @@ async function exportIdeas() {
 
   let exportData;
   if (password) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await deriveKey(password, salt);
     const enc = new TextEncoder();
-    const data = enc.encode(dataStr);
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: iv },
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const ciphertext = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
       key,
-      data
+      enc.encode(JSON.stringify(ideas))
     );
 
     exportData = {
@@ -281,7 +276,7 @@ async function exportIdeas() {
     exportData = ideas;
   }
 
-  const contentToSave = JSON.stringify(exportData, null, 2);
+  const contentToSave = password ? JSON.stringify(exportData) : JSON.stringify(exportData, null, 2);
 
   // 1. Android / iOS (Capacitor Native)
   if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -424,8 +419,8 @@ async function processImport(imported) {
       const ciphertext = new Uint8Array(imported.ciphertext);
       const key = await deriveKey(password, salt);
 
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: iv },
+      const decrypted = await window.crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: iv },
         key,
         ciphertext
       );
