@@ -5,6 +5,8 @@ const ideaForm = document.getElementById('ideaForm');
 const themeToggle = document.getElementById('themeToggle');
 const calendarModal = document.getElementById('calendarModal');
 const sharedFileInput = document.getElementById('sharedFileInput');
+const colorPickerBtn = document.getElementById('colorPickerBtn');
+const accentColorInput = document.getElementById('accentColorInput');
 const imageViewerModal = document.getElementById('imageViewerModal');
 const fullImage = document.getElementById('fullImage');
 const imageCaption = document.getElementById('imageCaption');
@@ -17,6 +19,69 @@ function init() {
   renderIdeas();
   setupEventListeners();
   applySavedTheme();
+  applySavedAccentColor();
+}
+
+// Helper: Convert Hex to HSL
+function hexToHSL(H) {
+  // Convert hex to RGB first
+  let r = 0, g = 0, b = 0;
+  if (H.length == 4) {
+    r = "0x" + H[1] + H[1];
+    g = "0x" + H[2] + H[2];
+    b = "0x" + H[3] + H[3];
+  } else if (H.length == 7) {
+    r = "0x" + H[1] + H[2];
+    g = "0x" + H[3] + H[4];
+    b = "0x" + H[5] + H[6];
+  }
+  // Then to HSL
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  let cmin = Math.min(r, g, b),
+    cmax = Math.max(r, g, b),
+    delta = cmax - cmin,
+    h = 0,
+    s = 0,
+    l = 0;
+
+  if (delta == 0)
+    h = 0;
+  else if (cmax == r)
+    h = ((g - b) / delta) % 6;
+  else if (cmax == g)
+    h = (b - r) / delta + 2;
+  else
+    h = (r - g) / delta + 4;
+
+  h = Math.round(h * 60);
+
+  if (h < 0)
+    h += 360;
+
+  l = (cmax + cmin) / 2;
+  s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  s = +(s * 100).toFixed(1);
+  l = +(l * 100).toFixed(1);
+
+  return { h, s, l };
+}
+
+function updateThemeColors(hexColor) {
+  const { h, s, l } = hexToHSL(hexColor);
+  document.documentElement.style.setProperty('--main-hue', h);
+  document.documentElement.style.setProperty('--main-sat', s + '%');
+  document.documentElement.style.setProperty('--main-lig', l + '%'); // For dark mode default
+  // Also force accent color variable if needed, but HSL handles it
+}
+
+function applySavedAccentColor() {
+  const savedColor = localStorage.getItem('accent-color');
+  if (savedColor) {
+    updateThemeColors(savedColor);
+    accentColorInput.value = savedColor;
+  }
 }
 
 function applySavedTheme() {
@@ -55,6 +120,17 @@ function setupEventListeners() {
   // Open (Import)
   document.getElementById('openSharedBtn').addEventListener('click', () => sharedFileInput.click());
   sharedFileInput.addEventListener('change', importIdeas);
+
+  // Color Picker
+  colorPickerBtn.addEventListener('click', () => {
+    accentColorInput.click();
+  });
+
+  accentColorInput.addEventListener('input', (e) => {
+    const color = e.target.value;
+    updateThemeColors(color);
+    localStorage.setItem('accent-color', color);
+  });
 
   // Form Submit
   ideaForm.addEventListener('submit', async (e) => {

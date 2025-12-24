@@ -1,27 +1,28 @@
-/* Global Styles & Variables */
 :root {
+  /* Dynamic Theme Variables (Default Green) */
+  --main-hue: 134;
+  --main-sat: 100%;
+  --main-lig: 50%;
+  /* Not strictly used for all calculations but useful to have */
+
+  --accent-color: hsl(var(--main-hue), var(--main-sat), var(--main-lig));
+
   /* Dark Theme (Default) */
   --bg-color: #121212;
   --surface-color: #1E1E1E;
   --text-primary: #FFFFFF;
   --text-secondary: #B3B3B3;
   --border-color: #333333;
-  --accent-color: #00FF3C;
-  /* Electric Green */
 
   --danger-color: #ff4c4c;
 
-  /* Status Colors (Pastel - Dark Mode Adjusted) */
+  /* Status Colors */
   --status-progress-bg: #1E293B;
-  /* Dark Blue Surface */
   --status-progress-border: #60A5FA;
-  /* Pastel Blue */
   --status-progress-text: #BFDBFE;
 
   --status-paused-bg: #2C1A1D;
-  /* Dark Red Surface */
   --status-paused-border: #F87171;
-  /* Pastel Red */
   --status-paused-text: #FECACA;
 
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
@@ -29,17 +30,21 @@
 }
 
 [data-theme="light"] {
-  --bg-color: #E6FFED;
-  /* Very pale green background */
-  --surface-color: #70FF99;
-  /* The requested bright green */
-  --text-primary: #064E3B;
-  /* Dark green text */
-  --text-secondary: #065F46;
-  /* Slightly lighter dark green */
-  --border-color: #86EFAC;
-  --accent-color: #005C2B;
-  /* Deep Green for Accent so it's visible */
+  /* Light Mode Color Logic: Derived from Main Hue for a Tinted Look */
+  --bg-color: hsl(var(--main-hue), 40%, 96%);
+  /* Very pale tint */
+  --surface-color: hsl(var(--main-hue), 50%, 90%);
+  /* Light surface tint */
+  --text-primary: hsl(var(--main-hue), 90%, 15%);
+  /* Dark contrast text */
+  --text-secondary: hsl(var(--main-hue), 60%, 25%);
+  /* Softer dark text */
+  --border-color: hsl(var(--main-hue), 60%, 75%);
+  /* Tinted border */
+
+  /* Make accent darker in light mode for visibility if needed, or stick to choice */
+  /* Here we use a slightly darkened version of the hue for better contrast on light backgrounds */
+  --accent-color: hsl(var(--main-hue), 90%, 35%);
 
   /* Status Colors (Pastel - Light Mode) */
   --status-progress-bg: #EFF6FF;
@@ -544,12 +549,14 @@ input[type="datetime-local"] {
   /* Header optimizations for mobile */
   header {
     padding: 1rem;
-    flex-wrap: wrap;
+    align-items: center;
+    /* Vertically align */
   }
 
   h1 {
     font-size: 1.2rem;
-    flex: 1;
+    /* Allow h1 to take available space but respect controls */
+    margin-right: 1rem;
   }
 
   .controls {
@@ -560,44 +567,42 @@ input[type="datetime-local"] {
     gap: 0.5rem;
     display: flex;
     flex-direction: row;
+    align-items: center;
+    /* Remove any background if default was transparent */
   }
 
-  /* All buttons fixed in TOP RIGHT corner on mobile */
-  #themeToggle,
-  #shareBtn,
-  #openSharedBtn,
-  #calendarBtn {
-    position: fixed;
-    top: calc(1rem + 20px);
-    z-index: 1001;
-    padding: 0.6rem;
+  /* Unified mobile button style */
+  .controls button {
+    position: static !important;
+    /* Reset any fixed pos */
+    /* No manual right/top positioning needed */
+    padding: 0;
     border-radius: 50%;
     width: 44px;
     height: 44px;
+    min-width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 1.1rem;
-    gap: 0;
-  }
-
-  /* Position each button from right to left */
-  #themeToggle {
-    right: 1rem;
     font-size: 1.2rem;
+    background-color: var(--surface-color);
+    /* Ensure visibility */
+    border: 1px solid var(--border-color);
   }
 
-  #openSharedBtn {
-    right: 4.5rem;
-  }
-
-  #shareBtn {
-    right: 8rem;
-  }
-
-  #calendarBtn {
-    right: 11.5rem;
+  /* Reset ID specific styles that might interfere */
+  #themeToggle,
+  #shareBtn,
+  #openSharedBtn,
+  #calendarBtn,
+  #colorPickerBtn {
+    top: auto;
+    right: auto;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
   }
 
   /* Board adjustments */
@@ -665,28 +670,7 @@ input[type="datetime-local"] {
     font-size: 1rem;
   }
 
-  #themeToggle,
-  #shareBtn,
-  #openSharedBtn {
-    width: 40px;
-    height: 40px;
-    padding: 0.5rem;
-    font-size: 1rem;
-    top: calc(1rem + 20px);
-  }
 
-  #themeToggle {
-    right: 0.75rem;
-    font-size: 1.1rem;
-  }
-
-  #openSharedBtn {
-    right: 4rem;
-  }
-
-  #shareBtn {
-    right: 7.25rem;
-  }
 
   .container {
     padding: 0.75rem;
@@ -725,7 +709,7 @@ input[type="datetime-local"] {
   display: flex;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
-  background-color: #00FF3C;
+  background-color: var(--accent-color);
   font-size: 14px;
   width: 90%;
   padding: 0.5rem 1.5rem 0 1.5rem;
@@ -776,7 +760,7 @@ input[type="datetime-local"] {
   position: absolute;
   width: 10px;
   height: 10px;
-  background-color: #00FF3C;
+  background-color: var(--accent-color);
   bottom: 0;
   opacity: 0;
   transition: background-color var(--transition-speed);
@@ -800,7 +784,7 @@ input[type="datetime-local"] {
 
 @keyframes name-activated {
   from {
-    background-color: #00FF3C;
+    background-color: var(--accent-color);
     font-weight: 500;
     cursor: pointer;
     color: #121212;
@@ -843,7 +827,7 @@ input[type="datetime-local"] {
 
 @keyframes name-text-activated {
   from {
-    background-color: #00FF3C;
+    background-color: var(--accent-color);
   }
 
   to {
@@ -866,7 +850,7 @@ input[type="datetime-local"] {
 }
 
 .content-wrapper {
-  background-color: #00FF3C;
+  background-color: var(--accent-color);
   width: 90%;
   margin: 0 auto;
   border-bottom-left-radius: 0.5rem;
@@ -883,7 +867,7 @@ input[type="datetime-local"] {
   border-radius: 0.5rem;
   padding: 1rem;
   padding-bottom: 1.2rem;
-  border: 4px solid #00FF3C;
+  border: 4px solid var(--accent-color);
   border-top-width: 0px;
   color: var(--text-primary);
   /* Ensure text is visible on light grey */
@@ -920,7 +904,7 @@ input[type="datetime-local"] {
   color: var(--text-secondary);
   margin-bottom: 1.5rem;
   padding: 0.75rem;
-  background: rgba(0, 255, 60, 0.05);
+  background: hsla(var(--main-hue), var(--main-sat), 50%, 0.1);
   border-radius: 8px;
   border-left: 3px solid var(--accent-color);
 }
@@ -1138,7 +1122,7 @@ input[type="datetime-local"] {
   object-fit: contain;
   animation-name: zoom;
   animation-duration: 0.3s;
-  box-shadow: 0 0 20px rgba(0, 255, 60, 0.2);
+  box-shadow: 0 0 20px hsla(var(--main-hue), var(--main-sat), 50%, 0.2);
   border-radius: 8px;
 }
 
