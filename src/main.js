@@ -5,6 +5,9 @@ const ideaForm = document.getElementById('ideaForm');
 const themeToggle = document.getElementById('themeToggle');
 const calendarModal = document.getElementById('calendarModal');
 const sharedFileInput = document.getElementById('sharedFileInput');
+const imageViewerModal = document.getElementById('imageViewerModal');
+const fullImage = document.getElementById('fullImage');
+const imageCaption = document.getElementById('imageCaption');
 
 // State
 let currentFilter = 'all';
@@ -112,6 +115,18 @@ function setupEventListeners() {
   const setupPermsBtn = document.getElementById('setupPermsBtn');
   if (setupPermsBtn) {
     setupPermsBtn.addEventListener('click', setupPermissions);
+  }
+
+  // Image Viewer Close
+  const closeImageBtn = document.querySelector('.close-image-modal');
+  if (closeImageBtn) {
+    closeImageBtn.addEventListener('click', closeImageViewer);
+  }
+
+  if (imageViewerModal) {
+    imageViewerModal.addEventListener('click', (e) => {
+      if (e.target === imageViewerModal) closeImageViewer();
+    });
   }
 }
 
@@ -232,6 +247,18 @@ function openCalendar() {
 
 function closeCalendar() {
   calendarModal.classList.remove('open');
+}
+
+function openImageViewer(src, caption) {
+  imageViewerModal.classList.add('open');
+  fullImage.src = src;
+  imageCaption.innerHTML = caption ? caption : '';
+}
+// Expose for inline onclick
+window.viewImage = openImageViewer;
+
+function closeImageViewer() {
+  imageViewerModal.classList.remove('open');
 }
 
 async function deriveKey(password, salt) {
@@ -553,7 +580,9 @@ function renderIdeas() {
 
     let imgHtml = '';
     if (ideaImg) {
-      imgHtml = `<div class="card-image"><img src="${ideaImg}" alt="Idea Image"></div>`;
+      // Add onclick handler to open the viewer
+      const escapedName = ideaName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      imgHtml = `<div class="card-image"><img src="${ideaImg}" alt="Idea Image" class="clickable-image" onclick="window.viewImage('${ideaImg}', '${escapedName}')"></div>`;
     }
 
 
